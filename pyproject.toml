@@ -1,0 +1,59 @@
+[project]
+name = "ai-metadata-cleaner"
+version = "1.0.0"
+description = "A local-first CLI and Codex skill for removing embedded image metadata and AI provenance."
+authors = [
+    { name = "Ibrahim Mustafa" },
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "click>=8.1.3,<9.0.0",
+    "pillow>=12.2.0,<13.0.0",
+    "mutagen>=1.46.0,<2.0.0",
+    "pypdf>=6.10.2,<7.0.0",
+    "pikepdf>=10.0.0,<11.0.0",
+    "python-docx>=1.2.0,<2.0.0",
+    "piexif>=1.1.3,<2.0.0",
+    "tqdm>=4.66.1,<5.0.0",
+    "pyexiftool>=0.5.6,<0.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ibrofk/ai-metadata-cleaner"
+Repository = "https://github.com/ibrofk/ai-metadata-cleaner"
+Issues = "https://github.com/ibrofk/ai-metadata-cleaner/issues"
+Documentation = "https://github.com/ibrofk/ai-metadata-cleaner/blob/main/docs/USAGE.md"
+Changelog = "https://github.com/ibrofk/ai-metadata-cleaner/blob/main/RELEASE_NOTES.md"
+Security = "https://github.com/ibrofk/ai-metadata-cleaner/blob/main/SECURITY.md"
+
+[project.scripts]
+ai-metadata-cleaner = "m_c.cli.main:cli"
+metadata-cleaner = "m_c.cli.main:cli"
+
+[tool.poetry]
+packages = [{ include = "m_c" }]
+exclude = ["m_c/tests", "m_c/tests/**"]
+include = [
+    { path = "CONTRIBUTING.md", format = "sdist" },
+    { path = "SECURITY.md", format = "sdist" },
+    { path = "RELEASE_NOTES.md", format = "sdist" },
+    { path = "docs/*.md", format = "sdist" },
+]
+
+# Removed unnecessary dependencies: tinytag, hachoir, av, dmeta, py7zr
+
+[tool.poetry.group.dev.dependencies]
+black = ">=26.3.1,<27.0.0"
+flake8 = "^7.3.0"
+pip-audit = "^2.10.0"
+pytest = ">=9.0.3,<10.0.0"
+pytest-cov = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+norecursedirs = ["tools"]

@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Metadata Cleaner"
+  short_description: "Remove embedded image metadata locally"
+  default_prompt: "Use $ai-metadata-cleaner to remove embedded image metadata locally and verify the cleaned outputs."

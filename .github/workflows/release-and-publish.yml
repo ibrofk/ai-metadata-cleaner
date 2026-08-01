@@ -1,0 +1,103 @@
+name: Release and Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"  # any tag starting with 'v'
+
+jobs:
+  publish_and_release:
+    name: Publish Package and Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libimage-exiftool-perl libjpeg-dev zlib1g-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pipx install poetry==2.3.4
+
+      - name: Install Dependencies
+        run: poetry install --with dev
+
+      - name: Check Package Metadata
+        run: poetry check --lock
+
+      - name: Verify Release Version
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          with Path("pyproject.toml").open("rb") as pyproject_file:
+              version = tomllib.load(pyproject_file)["project"]["version"]
+
+          expected_tag = f"v{version}"
+          if tag != expected_tag:
+              raise SystemExit(
+                  f"Release tag {tag} does not match pyproject version "
+                  f"{version}; expected {expected_tag}"
+              )
+          PY
+
+      - name: Run Tests
+        run: poetry run pytest
+
+      - name: Run Lint
+        run: poetry run flake8 m_c manage.py
+
+      - name: Audit Dependencies
+        run: poetry run pip-audit
+
+      - name: Build Package
+        run: |
+          poetry build
+
+      - name: Extract Release Notes
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          text = Path("RELEASE_NOTES.md").read_text(encoding="utf-8")
+          pattern = rf"^## {re.escape(tag)}\n(?P<body>.*?)(?=^## v|\Z)"
+          match = re.search(pattern, text, flags=re.MULTILINE | re.DOTALL)
+          if not match:
+              raise SystemExit(f"No RELEASE_NOTES.md section found for {tag}")
+
+          body = match.group("body").strip()
+          if not body:
+              raise SystemExit(f"Release notes section for {tag} is empty")
+
+          Path("release-notes.md").write_text(body + "\n", encoding="utf-8")
+          PY
+
+      - name: Publish Package to PyPI
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          poetry publish --username __token__ --password "$POETRY_PYPI_TOKEN_PYPI" --no-interaction
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes.md
+          generate_release_notes: false
+          draft: false
+          prerelease: false
