@@ -3,21 +3,77 @@
 [![CI](https://github.com/ibrofk/ai-metadata-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/ibrofk/ai-metadata-cleaner/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This repository contains a self-contained Codex skill and the local CLI runtime
+This repository contains a self-contained Agent Skill and the local CLI runtime
 it uses. It is a privacy-focused tool for viewing and removing metadata from
 images, documents, audio, and video files. It writes cleaned copies by default,
 keeps originals unchanged, and includes CLI, JSON automation, Docker, and a
 local Web UI for side-by-side metadata checks.
 
-## Install for Codex
+## Install for AI Coding Agents
 
-This repository is a complete Codex skill, not only a Python package. It
-contains `SKILL.md`, `agents/openai.yaml`, the PowerShell runner, the cleaner
-implementation, and the Windows dependency bootstrapper.
+This repository follows the portable Agent Skills layout: one skill directory
+with a required `SKILL.md` and bundled supporting files. `agents/openai.yaml`
+adds Codex UI metadata, but it is optional and does not prevent Claude Code,
+OpenCode, Cursor, Gemini CLI, or GitHub Copilot from loading the same skill.
+The PowerShell runner, cleaner implementation, and Windows dependency
+bootstrapper are included in the same directory.
 
-### Recommended: GitHub CLI
+### Install for a specific host
 
-Install it for the current user with the official GitHub CLI skill installer:
+The official GitHub CLI installer places the skill in the host's correct
+directory. Replace `<agent-id>` with one of these supported values:
+
+| Host | Agent ID | Invocation |
+| --- | --- | --- |
+| Codex | `codex` | `$ai-metadata-cleaner` |
+| Claude Code | `claude-code` | `/ai-metadata-cleaner` |
+| OpenCode | `opencode` | `/ai-metadata-cleaner` or ask it to use the skill |
+| Cursor | `cursor` | Use the host's skill picker or natural-language request |
+| Gemini CLI | `gemini-cli` | Use the host's skill picker or natural-language request |
+| GitHub Copilot | `github-copilot` | Use the host's skill picker or natural-language request |
+
+```powershell
+gh skill install ibrofk/ai-metadata-cleaner SKILL.md --agent <agent-id> --scope user
+```
+
+For example, install it for Claude Code or OpenCode:
+
+```powershell
+gh skill install ibrofk/ai-metadata-cleaner SKILL.md --agent claude-code --scope user
+gh skill install ibrofk/ai-metadata-cleaner SKILL.md --agent opencode --scope user
+```
+
+To install it for every listed host from one Windows machine:
+
+```powershell
+$skillRepository = 'ibrofk/ai-metadata-cleaner'
+$skillPath = 'SKILL.md'
+$agents = @('codex', 'claude-code', 'opencode', 'cursor', 'gemini-cli', 'github-copilot')
+
+foreach ($agent in $agents) {
+    gh skill install $skillRepository $skillPath --agent $agent --scope user
+    if ($LASTEXITCODE -ne 0) {
+        throw "Skill installation failed for $agent"
+    }
+}
+```
+
+Use `--scope project` from a project root when the skill should be shared with
+that repository instead of installed for the current user. Claude Code also
+supports `.claude/skills/<skill-name>/SKILL.md`, while OpenCode can discover
+`.opencode/skills`, `.claude/skills`, and `.agents/skills`; see the [Claude Code
+skills documentation](https://code.claude.com/docs/en/slash-commands) and
+[OpenCode skills documentation](https://opencode.ai/docs/skills).
+
+This release is Windows-first. The skill folder can be discovered by these
+hosts on other operating systems, but the bundled `*.ps1` runner and automatic
+ExifTool bootstrap are currently intended for Windows. A macOS or Linux
+release needs a compatible PowerShell/Python/ExifTool setup or a future
+platform-specific runner.
+
+### Codex installation
+
+Install it for Codex at user scope with:
 
 ```powershell
 gh skill install ibrofk/ai-metadata-cleaner SKILL.md --agent codex --scope user
@@ -51,7 +107,8 @@ $destination = Join-Path (Get-Location) '.agents\skills\ai-metadata-cleaner'
 git clone https://github.com/ibrofk/ai-metadata-cleaner.git $destination
 ```
 
-Close and reopen Codex after installation so it refreshes its skill catalog.
+Close and reopen the target agent after installation if its skill catalog does
+not refresh automatically.
 This is a derived work; see [NOTICE.md](NOTICE.md) for upstream attribution.
 
 ### Use it in Codex
