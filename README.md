@@ -9,24 +9,88 @@ images, documents, audio, and video files. It writes cleaned copies by default,
 keeps originals unchanged, and includes CLI, JSON automation, Docker, and a
 local Web UI for side-by-side metadata checks.
 
-## Codex Skill
+## Install for Codex
 
-The repository root is directly usable as a Codex skill because it includes:
+This repository is a complete Codex skill, not only a Python package. It
+contains `SKILL.md`, `agents/openai.yaml`, the PowerShell runner, the cleaner
+implementation, and the Windows dependency bootstrapper.
 
-- `SKILL.md` and `agents/openai.yaml` for Codex discovery and instructions.
-- `scripts/run-image-metadata-cleaner.ps1` as the skill entry point.
-- The complete Python implementation, tests, project configuration, and
-  Windows bootstrap scripts.
+### Recommended: GitHub CLI
 
-Clone or copy this repository into a Codex skills directory, for example:
+Install it for the current user with the official GitHub CLI skill installer:
 
 ```powershell
-Copy-Item -Recurse . "$env:USERPROFILE\.codex\skills\ai-metadata-cleaner"
+gh skill install ibrofk/ai-metadata-cleaner SKILL.md --agent codex --scope user
 ```
 
-The runner bootstraps an isolated environment and a pinned ExifTool release on
-first use. It does not modify system packages or upload image files. This is a
-derived work; see [NOTICE.md](NOTICE.md) for upstream attribution.
+The `SKILL.md` argument is intentional: this repository exposes the skill at
+its root instead of under a `skills/` subdirectory. To install it into the
+current project's `.agents\skills` directory, run the same command from that
+project's root and use project scope:
+
+```powershell
+Set-Location 'D:\Workspace\YourProject'
+gh skill install ibrofk/ai-metadata-cleaner SKILL.md --agent codex --scope project
+```
+
+### Manual installation
+
+Use one of these copy-based fallbacks if `gh skill` is unavailable. User scope
+makes the skill available across projects:
+
+```powershell
+$destination = Join-Path $env:USERPROFILE '.codex\skills\ai-metadata-cleaner'
+git clone https://github.com/ibrofk/ai-metadata-cleaner.git $destination
+```
+
+Project scope keeps the skill with a repository and follows the shared
+`.agents\skills` convention:
+
+```powershell
+$destination = Join-Path (Get-Location) '.agents\skills\ai-metadata-cleaner'
+git clone https://github.com/ibrofk/ai-metadata-cleaner.git $destination
+```
+
+Close and reopen Codex after installation so it refreshes its skill catalog.
+This is a derived work; see [NOTICE.md](NOTICE.md) for upstream attribution.
+
+### Use it in Codex
+
+Invoke it explicitly with `$ai-metadata-cleaner`:
+
+```text
+$ai-metadata-cleaner Clean every supported image under D:\Workspace\Replofy\replofy-assests recursively. Write verified copies under D:\Workspace\Replofy\replofy-assests\cleaned-ai. Keep originals and adjacent .xmp, .json, and .c2pa sidecars unchanged, and return the JSON report.
+```
+
+Other prompts that trigger the same workflow:
+
+```text
+$ai-metadata-cleaner Remove EXIF, GPS, IPTC, XMP, ICC, PNG text, Stable Diffusion parameters, AI generator tags, and C2PA/JUMBF provenance from these images locally. Do not upload or overwrite anything.
+```
+
+The skill can also trigger from a natural-language request containing terms
+such as EXIF, GPS, C2PA, Stable Diffusion parameters, PNG info, AI signatures,
+or image provenance. It reports that pixel-level watermarks such as SynthID
+are outside the scope of metadata cleaning.
+
+### Run the bundled CLI directly
+
+This bypasses Codex but uses the same verified image-only pipeline. From a
+clone of this repository, run:
+
+```powershell
+New-Item -ItemType Directory -Force -Path .\reports | Out-Null
+.\scripts\run-ai-clean.ps1 'D:\Workspace\Replofy\replofy-assests' --json-summary --summary-file .\reports\ai-clean.json
+```
+
+The first run creates an isolated Python environment and downloads the pinned
+official ExifTool artifact into a private cache after checksum verification.
+It does not modify system packages or upload image files. The process writes
+verified outputs to `cleaned-ai\` by default and never overwrites originals.
+
+The `ai-clean` command returns `0` for a fully successful batch, `1` when all
+files fail, `2` for invalid input/unsupported format/missing dependency, and
+`3` for a partial batch failure.
 
 The `ai-clean` command is the image-focused path for removing embedded EXIF,
 GPS, IPTC, XMP, ICC profiles, PNG generation parameters, and C2PA/JUMBF
